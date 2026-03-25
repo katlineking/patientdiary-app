@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoughLog Pro - Patient</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-900 pb-20">
+
+    <nav class="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <h1 class="text-blue-600 font-bold text-xl flex items-center gap-2">
+                <i data-lucide="clipboard-check"></i> CoughLog
+            </h1>
+            <div class="flex items-center gap-3">
+                <input type="color" id="themeColor" onchange="updateTheme(this.value)" value="#3b82f6" class="w-6 h-6 rounded-full border-none cursor-pointer">
+                <span class="text-[10px] text-slate-400 font-mono">ID: 102-A</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-md mx-auto p-4 space-y-6">
+        
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+            <h2 id="formTitle" class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Log Activity</h2>
+            <div class="space-y-4">
+                <input type="hidden" id="editId">
+                <select id="activityType" onchange="checkCustom(this)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="" disabled selected>-- Select Activity --</option>
+                    <option>Sleeping</option>
+                    <option>Eating</option>
+                    <option>Exercise</option>
+                    <option>Medication</option>
+                    <option>Laying Flat</option>
+                    <option value="CUSTOM">+ Custom Activity</option>
+                </select>
+                <input type="text" id="customInput" placeholder="Activity Name" class="hidden w-full bg-slate-50 border border-slate-200 rounded-xl p-3">
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="datetime-local" id="startTime" class="bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm">
+                    <input type="datetime-local" id="endTime" class="bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm">
+                </div>
+
+                <button id="saveBtn" onclick="saveLog()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:opacity-90 transition shadow-md">
+                    Save Entry
+                </button>
+                <button id="cancelBtn" onclick="resetForm()" class="hidden w-full text-slate-400 text-sm font-medium py-1">Cancel Edit</button>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Daily View</h2>
+                <input type="date" id="viewDate" onchange="renderAll()" class="text-sm border-none bg-blue-50 text-blue-700 font-bold rounded-lg px-2 py-1">
+            </div>
+            
+            <div class="h-40 mb-4 bg-slate-50 rounded-xl p-2 flex items-center justify-center">
+                <canvas id="activityChart"></canvas>
+            </div>
+
+            <div id="logList" class="space-y-3">
+                </div>
+        </section>
+
+        <button onclick="exportCSV()" class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl flex justify-center items-center gap-2 shadow-lg">
+            <i data-lucide="file-down"></i> Final Export for Clinician
+        </button>
+    </main>
+
+    <script>
+        lucide.createIcons();
+    let logs = JSON.parse(localStorage.getItem('coughLogs')) || [];
+    let chart;
+    
+    document.getElementById('viewDate').value = new Date().toISOString().split('T')[0];
+
+    function updateTheme(color) {
+        document.querySelectorAll('.bg-blue-600').forEach(el => el.style.backgroundColor = color);
+        document.querySelectorAll('.text-blue-600').forEach(el => el.style.color = color);
+        updateChart();
+    }
+
+    function checkCustom(s) { 
+        document.getElementById('customInput').classList.toggle('hidden', s.value !== 'CUSTOM'); 
+    }
+
+    function getActivityColor(type) {
+        const colorMap = {
+            'Sleeping': '#3b82f6',
+            'Eating': '#10b981',
+            'Exercise': '#ef4444',
+            'Medication': '#f59e0b',
+            'Laying Flat': '#8b5cf6'
+        };
+        return colorMap[type] || '#94a3b8';
+    }
+
+    function saveLog() {
+        const id = document.getElementById('editId').value;
+        let type = document.getElementById('activityType').value;
+        if (type === 'CUSTOM') type = document.getElementById('customInput').value;
+        const start = document.getElementById('startTime').value;
+        const end = document.getElementById('endTime').value;
+
+        if (!start || !end || !type) return alert("Please select an activity and set both times.");
+
+        const entry = { id: id ? parseInt(id) : Date.now(), type, start, end };
+
+        if (id) {
+            const index = logs.findIndex(l => l.id === parseInt(id));
+            logs[index] = entry;
+        } else {
+            logs.push(entry);
+        }
+
+        localStorage.setItem('coughLogs', JSON.stringify(logs));
+        resetForm();
+        renderAll();
+    }
+
+    function editLog(id) {
+        const entry = logs.find(l => l.id === id);
+        document.getElementById('editId').value = entry.id;
+        document.getElementById('activityType').value = ["Sleeping","Eating","Exercise","Medication","Laying Flat"].includes(entry.type) ? entry.type : "CUSTOM";
+        if (document.getElementById('activityType').value === "CUSTOM") {
+            document.getElementById('customInput').value = entry.type;
+            document.getElementById('customInput').classList.remove('hidden');
+        }
+        document.getElementById('startTime').value = entry.start;
+        document.getElementById('endTime').value = entry.end;
+        document.getElementById('formTitle').innerText = "Editing Entry...";
+        document.getElementById('saveBtn').innerText = "Update Entry";
+        document.getElementById('cancelBtn').classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function deleteLog(id) {
+        if(confirm("Delete this log?")) {
+            logs = logs.filter(l => l.id !== id);
+            localStorage.setItem('coughLogs', JSON.stringify(logs));
+            renderAll();
+        }
+    }
+
+    function resetForm() {
+        document.getElementById('editId').value = "";
+        document.getElementById('formTitle').innerText = "Log Activity";
+        document.getElementById('saveBtn').innerText = "Save Entry";
+        document.getElementById('cancelBtn').classList.add('hidden');
+        document.getElementById('startTime').value = "";
+        document.getElementById('endTime').value = "";
+document.getElementById('activityType').value = "";        document.getElementById('customInput').value = "";
+        document.getElementById('customInput').classList.add('hidden');
+    }
+
+    function renderAll() {
+        const selectedDate = document.getElementById('viewDate').value;
+        logs.sort((a, b) => new Date(a.start) - new Date(b.start)); 
+        
+        // NEW LOGIC: Check if the selected date falls anywhere between start and end days
+        const filtered = logs.filter(l => {
+            const startDay = l.start.split('T')[0];
+            const endDay = l.end.split('T')[0];
+            return selectedDate >= startDay && selectedDate <= endDay;
+        });
+
+        const list = document.getElementById('logList');
+        
+        if (filtered.length === 0) {
+            list.innerHTML = `<p class="text-center text-slate-400 text-sm italic py-4">No data for this date.</p>`;
+        } else {
+            list.innerHTML = filtered.map(l => `
+                <div class="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-2 h-8 rounded-full" style="background-color: ${getActivityColor(l.type)}"></div>
+                        <div>
+                            <p class="font-bold text-slate-800">${l.type}</p>
+                            <p class="text-[10px] text-slate-500">${new Date(l.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${new Date(l.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editLog(${l.id})" class="p-2 text-slate-400 hover:text-blue-500"><i data-lucide="edit-3" size="18"></i></button>
+                        <button onclick="deleteLog(${l.id})" class="p-2 text-slate-400 hover:text-red-500"><i data-lucide="trash-2" size="18"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        lucide.createIcons();
+        updateChart();
+    }
+ function updateChart() {
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        const selectedDate = document.getElementById('viewDate').value;
+        
+        // Filter using the same overnight logic
+        const filtered = logs.filter(l => {
+            const startDay = l.start.split('T')[0];
+            const endDay = l.end.split('T')[0];
+            return selectedDate >= startDay && selectedDate <= endDay;
+        });
+
+        if (chart) chart.destroy();
+
+        const chartData = filtered.map(l => {
+            const start = new Date(l.start);
+            const end = new Date(l.end);
+            const startDay = l.start.split('T')[0];
+            const endDay = l.end.split('T')[0];
+
+            // Default to spanning the whole day
+            let startHour = 0;
+            let endHour = 24;
+
+            // If it starts on the selected date, use actual start time
+            if (startDay === selectedDate) {
+                startHour = start.getHours() + (start.getMinutes() / 60);
+            }
+            
+            // If it ends on the selected date, use actual end time
+            if (endDay === selectedDate) {
+                endHour = end.getHours() + (end.getMinutes() / 60);
+            }
+
+            return {
+                x: [startHour, endHour],
+                y: 'Activities',
+                label: l.type,
+                color: getActivityColor(l.type)
+            };
+        });
+
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Activities'],
+                datasets: [{
+                    data: chartData,
+backgroundColor: chartData.map(d => d.color + '99'), // Adds 60% opacity                    borderRadius: 6,
+                    borderSkipped: false,
+                    barPercentage: 0.8
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        min: 0, max: 24,
+                        ticks: {
+                            stepSize: 3,
+                            callback: function(value) {
+                                if (value === 0 || value === 24) return '12 AM';
+                                if (value === 12) return '12 PM';
+                                return value > 12 ? (value - 12) + ' PM' : value + ' AM';
+                            }
+                        }
+                    },
+                    y: { display: false }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: { label: (ctx) => `${ctx.raw.label}` }
+                    }
+                }
+            }
+        });
+    }
+
+    function exportCSV() {
+        let csv = "Type,StartTime,EndTime\n" + logs.map(l => `${l.type},${l.start},${l.end}`).join("\n");
+        const link = document.createElement("a");
+        link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+        link.download = `CoughLog_Patient_Data.csv`;
+        link.click();
+    }
+
+    renderAll();
+    </script>
+</body>
+</html>
