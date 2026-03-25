@@ -17,7 +17,7 @@
             </h1>
             <div class="flex items-center gap-3">
                 <input type="color" id="themeColor" onchange="updateTheme(this.value)" value="#3b82f6" class="w-6 h-6 rounded-full border-none cursor-pointer">
-                <span class="text-[10px] text-slate-400 font-mono">ID: 102-A</span>
+<span id="patientIdDisplay" onclick="setPatientId()" class="text-[10px] text-slate-600 font-mono bg-slate-100 px-2 py-1 rounded border border-slate-200 cursor-pointer hover:bg-slate-200 transition">ID: 102-A</span>
             </div>
         </div>
     </nav>
@@ -39,9 +39,15 @@
                 </select>
                 <input type="text" id="customInput" placeholder="Activity Name" class="hidden w-full bg-slate-50 border border-slate-200 rounded-xl p-3">
                 
-                <div class="grid grid-cols-2 gap-3">
-                    <input type="datetime-local" id="startTime" class="bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm">
-                    <input type="datetime-local" id="endTime" class="bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm">
+                <div class="flex flex-col gap-3">
+                    <div class="w-full">
+                        <label class="block text-[10px] text-slate-400 ml-1 mb-1 uppercase tracking-wider">Start Time</label>
+                        <input type="datetime-local" id="startTime" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm">
+                    </div>
+                    <div class="w-full">
+                        <label class="block text-[10px] text-slate-400 ml-1 mb-1 uppercase tracking-wider">End Time</label>
+                        <input type="datetime-local" id="endTime" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm">
+                    </div>
                 </div>
 
                 <button id="saveBtn" onclick="saveLog()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:opacity-90 transition shadow-md">
@@ -75,6 +81,18 @@
     let logs = JSON.parse(localStorage.getItem('coughLogs')) || [];
     let chart;
     
+// NEW ID LOGIC:
+    let patientId = localStorage.getItem('patientId') || '102-A';
+    document.getElementById('patientIdDisplay').innerText = 'ID: ' + patientId;
+
+    function setPatientId() {
+        const newId = prompt("Enter Patient Study ID:", patientId);
+        if (newId && newId.trim() !== "") {
+            patientId = newId.trim();
+            localStorage.setItem('patientId', patientId);
+            document.getElementById('patientIdDisplay').innerText = 'ID: ' + patientId;
+        }
+    }
     document.getElementById('viewDate').value = new Date().toISOString().split('T')[0];
 
     function updateTheme(color) {
@@ -238,11 +256,11 @@ document.getElementById('activityType').value = "";        document.getElementBy
                 labels: ['Activities'],
                 datasets: [{
                     data: chartData,
-backgroundColor: chartData.map(d => d.color + '99'), // Adds 60% opacity                    borderRadius: 6,
+                    backgroundColor: chartData.map(d => d.color + '99'),
+                    borderRadius: 6,
                     borderSkipped: false,
                     barPercentage: 0.8
-                }]
-            },
+                }]            },
             options: {
                 indexAxis: 'y',
                 responsive: true,
@@ -271,11 +289,11 @@ backgroundColor: chartData.map(d => d.color + '99'), // Adds 60% opacity        
         });
     }
 
-    function exportCSV() {
+  function exportCSV() {
         let csv = "Type,StartTime,EndTime\n" + logs.map(l => `${l.type},${l.start},${l.end}`).join("\n");
         const link = document.createElement("a");
         link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-        link.download = `CoughLog_Patient_Data.csv`;
+        link.download = `CoughLog_${patientId}_Data.csv`; // <--- THIS LINE CHANGED
         link.click();
     }
 
