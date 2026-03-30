@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CoughLog Pro - Patient</title>
+    <title>Activity Tracker - Patient</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="ReSpire Logger">
+    <link rel="apple-touch-icon" href="respire-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -13,11 +17,11 @@
     <nav class="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-50 shadow-sm">
         <div class="max-w-md mx-auto flex justify-between items-center">
             <h1 class="text-blue-600 font-bold text-xl flex items-center gap-2">
-                <i data-lucide="clipboard-check"></i> CoughLog
+                <i data-lucide="clipboard-check"></i> Activity Tracker
             </h1>
             <div class="flex items-center gap-3">
                 <input type="color" id="themeColor" onchange="updateTheme(this.value)" value="#3b82f6" class="w-6 h-6 rounded-full border-none cursor-pointer">
-<span id="patientIdDisplay" onclick="setPatientId()" class="text-[10px] text-slate-600 font-mono bg-slate-100 px-2 py-1 rounded border border-slate-200 cursor-pointer hover:bg-slate-200 transition">ID: 102-A</span>
+                <span id="patientIdDisplay" onclick="setPatientId()" class="text-[10px] text-slate-600 font-mono bg-slate-100 px-2 py-1 rounded border border-slate-200 cursor-pointer hover:bg-slate-200 transition">ID: 102-A</span>
             </div>
         </div>
     </nav>
@@ -68,7 +72,7 @@
             </div>
 
             <div id="logList" class="space-y-3">
-                </div>
+            </div>
         </section>
 
         <button onclick="exportCSV()" class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl flex justify-center items-center gap-2 shadow-lg">
@@ -77,22 +81,42 @@
     </main>
 
     <script>
-        lucide.createIcons();
+    lucide.createIcons();
+    
+    // === PASTE YOUR GOOGLE APP SCRIPT URL HERE ===
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxLiVb0hP1R6TQEW6N6ExZXJaBUYqvtcZ4680VEUFQmpTaqaHLASizj8X3d18LvAtxO6Q/exec';
+    
     let logs = JSON.parse(localStorage.getItem('coughLogs')) || [];
     let chart;
     
-// NEW ID LOGIC:
-    let patientId = localStorage.getItem('patientId') || '102-A';
+    // --- NEW ONBOARDING LOGIC ---
+    // Try to get the ID from local storage
+    let patientId = localStorage.getItem('patientId');
+
+    // If no ID exists (first time loading the app), force them to enter one
+    if (!patientId) {
+        // The while loop ensures they cannot just hit "Cancel" or leave it blank
+        while (!patientId || patientId.trim() === "") {
+            patientId = prompt("Welcome to Activity Tracker!\n\nPlease enter your Patient Study ID to continue:");
+        }
+        // Clean up any accidental spaces and save it
+        patientId = patientId.trim();
+        localStorage.setItem('patientId', patientId);
+    }
+
+    // Display the ID on the screen
     document.getElementById('patientIdDisplay').innerText = 'ID: ' + patientId;
 
+    // They can still click the ID on the screen to change it later if they make a mistake
     function setPatientId() {
-        const newId = prompt("Enter Patient Study ID:", patientId);
+        const newId = prompt("Update Patient Study ID:", patientId);
         if (newId && newId.trim() !== "") {
             patientId = newId.trim();
             localStorage.setItem('patientId', patientId);
             document.getElementById('patientIdDisplay').innerText = 'ID: ' + patientId;
         }
     }
+    
     document.getElementById('viewDate').value = new Date().toISOString().split('T')[0];
 
     function updateTheme(color) {
@@ -116,6 +140,7 @@
         return colorMap[type] || '#94a3b8';
     }
 
+    // UPDATED SAVELOG WITH GOOGLE SHEETS INTEGRATION
     function saveLog() {
         const id = document.getElementById('editId').value;
         let type = document.getElementById('activityType').value;
@@ -132,6 +157,24 @@
             logs[index] = entry;
         } else {
             logs.push(entry);
+            
+            // --- NEW: SEND TO GOOGLE SHEETS IN THE BACKGROUND ---
+            if (GOOGLE_SCRIPT_URL !== 'YOUR_WEB_APP_URL_HERE') {
+                const sheetData = {
+                    patientId: patientId,
+                    type: type,
+                    start: start,
+                    end: end
+                };
+                
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Bypasses CORS issues for simple logging
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(sheetData)
+                }).then(() => console.log("Sent to Google Sheets"))
+                  .catch(err => console.error("Error sending to sheets:", err));
+            }
         }
 
         localStorage.setItem('coughLogs', JSON.stringify(logs));
@@ -170,7 +213,8 @@
         document.getElementById('cancelBtn').classList.add('hidden');
         document.getElementById('startTime').value = "";
         document.getElementById('endTime').value = "";
-document.getElementById('activityType').value = "";        document.getElementById('customInput').value = "";
+        document.getElementById('activityType').value = "";        
+        document.getElementById('customInput').value = "";
         document.getElementById('customInput').classList.add('hidden');
     }
 
@@ -178,7 +222,6 @@ document.getElementById('activityType').value = "";        document.getElementBy
         const selectedDate = document.getElementById('viewDate').value;
         logs.sort((a, b) => new Date(a.start) - new Date(b.start)); 
         
-        // NEW LOGIC: Check if the selected date falls anywhere between start and end days
         const filtered = logs.filter(l => {
             const startDay = l.start.split('T')[0];
             const endDay = l.end.split('T')[0];
@@ -209,11 +252,11 @@ document.getElementById('activityType').value = "";        document.getElementBy
         lucide.createIcons();
         updateChart();
     }
- function updateChart() {
+
+    function updateChart() {
         const ctx = document.getElementById('activityChart').getContext('2d');
         const selectedDate = document.getElementById('viewDate').value;
         
-        // Filter using the same overnight logic
         const filtered = logs.filter(l => {
             const startDay = l.start.split('T')[0];
             const endDay = l.end.split('T')[0];
@@ -228,16 +271,12 @@ document.getElementById('activityType').value = "";        document.getElementBy
             const startDay = l.start.split('T')[0];
             const endDay = l.end.split('T')[0];
 
-            // Default to spanning the whole day
             let startHour = 0;
             let endHour = 24;
 
-            // If it starts on the selected date, use actual start time
             if (startDay === selectedDate) {
                 startHour = start.getHours() + (start.getMinutes() / 60);
             }
-            
-            // If it ends on the selected date, use actual end time
             if (endDay === selectedDate) {
                 endHour = end.getHours() + (end.getMinutes() / 60);
             }
@@ -260,7 +299,8 @@ document.getElementById('activityType').value = "";        document.getElementBy
                     borderRadius: 6,
                     borderSkipped: false,
                     barPercentage: 0.8
-                }]            },
+                }]            
+            },
             options: {
                 indexAxis: 'y',
                 responsive: true,
@@ -289,11 +329,11 @@ document.getElementById('activityType').value = "";        document.getElementBy
         });
     }
 
-  function exportCSV() {
+    function exportCSV() {
         let csv = "Type,StartTime,EndTime\n" + logs.map(l => `${l.type},${l.start},${l.end}`).join("\n");
         const link = document.createElement("a");
         link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-        link.download = `CoughLog_${patientId}_Data.csv`; // <--- THIS LINE CHANGED
+        link.download = `ActivityLog_${patientId}_Data.csv`; // Updated to match new theme
         link.click();
     }
 
