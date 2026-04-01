@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activity Tracker - Patient</title>
+    <title>ReSpire FD Band Activity Log</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="ReSpire Logger">
@@ -12,59 +12,65 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-slate-50 font-sans text-slate-900 pb-20">
+<body class="bg-slate-50 font-sans text-slate-900 pb-20 text-[17px]">
 
     <nav class="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-50 shadow-sm">
         <div class="max-w-md mx-auto flex justify-between items-center">
-            <h1 class="text-blue-600 font-bold text-xl flex items-center gap-2">
-                <i data-lucide="clipboard-check"></i> Activity Tracker
-            </h1>
             <div class="flex items-center gap-3">
-                <input type="color" id="themeColor" onchange="updateTheme(this.value)" value="#3b82f6" class="w-6 h-6 rounded-full border-none cursor-pointer">
-                <span id="patientIdDisplay" onclick="setPatientId()" class="text-[10px] text-slate-600 font-mono bg-slate-100 px-2 py-1 rounded border border-slate-200 cursor-pointer hover:bg-slate-200 transition">ID: 102-A</span>
+                <div class="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center overflow-hidden">
+                    <img src="respirelogoclear.png" alt="ReSpire logo" class="w-9 h-9 object-contain" />
+                </div>
+                <h1 class="text-blue-700 font-bold text-2xl flex items-center gap-2">
+                    ReSpire Log
+                </h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <button id="patientIdDisplay" onclick="setPatientId()" class="text-sm text-slate-700 font-semibold bg-slate-100 px-3 py-2 rounded-xl border border-slate-300 cursor-pointer hover:bg-slate-200 transition">Study ID: 102-A</button>
             </div>
         </div>
     </nav>
 
     <main class="max-w-md mx-auto p-4 space-y-6">
+        <section class="bg-blue-50 border border-blue-100 rounded-2xl p-5">
+            <h2 class="text-base font-bold text-blue-800">Quick Instructions</h2>
+            <p class="mt-2 text-base leading-7 text-slate-800">Use this page to record activities such as sleeping, eating, exercise, medication, or lying flat while wearing the ReSpire FD Band.</p>
+            <p class="mt-2 text-base leading-7 text-slate-800">Choose the activity, enter the start and end times, and tap <span class="font-semibold">Save Entry</span>.</p>
+        </section>
         
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-            <h2 id="formTitle" class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Log Activity</h2>
+            <h2 id="formTitle" class="text-lg font-bold text-slate-800 mb-4">Log Activity</h2>
             <div class="space-y-4">
                 <input type="hidden" id="editId">
-                <select id="activityType" onchange="checkCustom(this)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500">
+                <label for="activityType" class="block text-sm font-semibold text-slate-700">Activity</label>
+                <select id="activityType" onchange="checkCustom(this)" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-base outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="" disabled selected>-- Select Activity --</option>
-                    <option>Sleeping</option>
-                    <option>Eating</option>
-                    <option>Exercise</option>
-                    <option>Medication</option>
-                    <option>Laying Flat</option>
                     <option value="CUSTOM">+ Custom Activity</option>
                 </select>
-                <input type="text" id="customInput" placeholder="Activity Name" class="hidden w-full bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <input type="text" id="customInput" placeholder="Enter custom activity name" class="hidden w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-base">
+                <p id="saveStatus" class="hidden text-base font-medium text-emerald-800 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3"></p>
                 
                 <div class="flex flex-col gap-3">
                     <div class="w-full">
-                        <label class="block text-[10px] text-slate-400 ml-1 mb-1 uppercase tracking-wider">Start Time</label>
-                        <input type="datetime-local" id="startTime" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm">
+                        <label class="block text-sm font-semibold text-slate-700 ml-1 mb-2">Start Time</label>
+                        <input type="datetime-local" id="startTime" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-base">
                     </div>
                     <div class="w-full">
-                        <label class="block text-[10px] text-slate-400 ml-1 mb-1 uppercase tracking-wider">End Time</label>
-                        <input type="datetime-local" id="endTime" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-sm">
+                        <label class="block text-sm font-semibold text-slate-700 ml-1 mb-2">End Time</label>
+                        <input type="datetime-local" id="endTime" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-base">
                     </div>
                 </div>
 
-                <button id="saveBtn" onclick="saveLog()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:opacity-90 transition shadow-md">
+                <button id="saveBtn" onclick="saveLog()" class="w-full bg-blue-700 text-white font-bold py-4 rounded-xl hover:opacity-90 transition shadow-md text-lg">
                     Save Entry
                 </button>
-                <button id="cancelBtn" onclick="resetForm()" class="hidden w-full text-slate-400 text-sm font-medium py-1">Cancel Edit</button>
+                <button id="cancelBtn" onclick="resetForm()" class="hidden w-full text-slate-600 text-base font-medium py-2">Cancel Edit</button>
             </div>
         </section>
 
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-semibold">Daily View</h2>
-                <input type="date" id="viewDate" onchange="renderAll()" class="text-sm border-none bg-blue-50 text-blue-700 font-bold rounded-lg px-2 py-1">
+                <h2 class="text-xl font-semibold">Daily View</h2>
+                <input type="date" id="viewDate" onchange="renderAll()" class="text-base border-none bg-blue-50 text-blue-700 font-bold rounded-lg px-3 py-2">
             </div>
             
             <div class="h-40 mb-4 bg-slate-50 rounded-xl p-2 flex items-center justify-center">
@@ -75,8 +81,8 @@
             </div>
         </section>
 
-        <button onclick="exportCSV()" class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl flex justify-center items-center gap-2 shadow-lg">
-            <i data-lucide="file-down"></i> Final Export for Clinician
+        <button onclick="exportCSV()" class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl flex justify-center items-center gap-2 shadow-lg text-lg">
+            <i data-lucide="file-down"></i> Download Activity CSV
         </button>
     </main>
 
@@ -86,7 +92,9 @@
     // === PASTE YOUR GOOGLE APP SCRIPT URL HERE ===
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxLiVb0hP1R6TQEW6N6ExZXJaBUYqvtcZ4680VEUFQmpTaqaHLASizj8X3d18LvAtxO6Q/exec';
     
+    const DEFAULT_ACTIVITIES = ['Sleeping', 'Eating', 'Exercise', 'Medication', 'Lying Flat'];
     let logs = JSON.parse(localStorage.getItem('coughLogs')) || [];
+    let customActivities = JSON.parse(localStorage.getItem('customActivities')) || [];
     let chart;
     
     // --- NEW ONBOARDING LOGIC ---
@@ -97,7 +105,7 @@
     if (!patientId) {
         // The while loop ensures they cannot just hit "Cancel" or leave it blank
         while (!patientId || patientId.trim() === "") {
-            patientId = prompt("Welcome to Activity Tracker!\n\nPlease enter your Patient Study ID to continue:");
+            patientId = prompt("Welcome to the ReSpire activity log.\n\nPlease enter your Study ID to continue:");
         }
         // Clean up any accidental spaces and save it
         patientId = patientId.trim();
@@ -105,28 +113,61 @@
     }
 
     // Display the ID on the screen
-    document.getElementById('patientIdDisplay').innerText = 'ID: ' + patientId;
+    document.getElementById('patientIdDisplay').innerText = 'Study ID: ' + patientId;
 
     // They can still click the ID on the screen to change it later if they make a mistake
     function setPatientId() {
-        const newId = prompt("Update Patient Study ID:", patientId);
+        const newId = prompt("Update Study ID:", patientId);
         if (newId && newId.trim() !== "") {
             patientId = newId.trim();
             localStorage.setItem('patientId', patientId);
-            document.getElementById('patientIdDisplay').innerText = 'ID: ' + patientId;
+            document.getElementById('patientIdDisplay').innerText = 'Study ID: ' + patientId;
         }
     }
     
     document.getElementById('viewDate').value = new Date().toISOString().split('T')[0];
 
-    function updateTheme(color) {
-        document.querySelectorAll('.bg-blue-600').forEach(el => el.style.backgroundColor = color);
-        document.querySelectorAll('.text-blue-600').forEach(el => el.style.color = color);
-        updateChart();
+    function normalizeActivityName(name) {
+        const trimmed = name.trim().replace(/\s+/g, ' ');
+        return trimmed
+            .toLowerCase()
+            .split(' ')
+            .filter(Boolean)
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
+
+    function getAllActivities() {
+        return [...DEFAULT_ACTIVITIES, ...customActivities];
+    }
+
+    function renderActivityOptions(selectedValue = '') {
+        const select = document.getElementById('activityType');
+        const activityOptions = getAllActivities();
+        select.innerHTML = `
+            <option value="" disabled ${selectedValue === '' ? 'selected' : ''}>-- Select Activity --</option>
+            ${activityOptions.map(activity => `<option value="${activity}" ${selectedValue === activity ? 'selected' : ''}>${activity}</option>`).join('')}
+            <option value="CUSTOM" ${selectedValue === 'CUSTOM' ? 'selected' : ''}>+ Custom Activity</option>
+        `;
+    }
+
+    function rememberCustomActivity(name) {
+        const normalized = normalizeActivityName(name);
+        if (!normalized) return '';
+        if (!DEFAULT_ACTIVITIES.includes(normalized) && !customActivities.includes(normalized)) {
+            customActivities.push(normalized);
+            customActivities.sort((a, b) => a.localeCompare(b));
+            localStorage.setItem('customActivities', JSON.stringify(customActivities));
+        }
+        return normalized;
     }
 
     function checkCustom(s) { 
-        document.getElementById('customInput').classList.toggle('hidden', s.value !== 'CUSTOM'); 
+        const isCustom = s.value === 'CUSTOM';
+        document.getElementById('customInput').classList.toggle('hidden', !isCustom);
+        if (isCustom) {
+            document.getElementById('customInput').focus();
+        }
     }
 
     function getActivityColor(type) {
@@ -135,7 +176,7 @@
             'Eating': '#10b981',
             'Exercise': '#ef4444',
             'Medication': '#f59e0b',
-            'Laying Flat': '#8b5cf6'
+            'Lying Flat': '#8b5cf6'
         };
         return colorMap[type] || '#94a3b8';
     }
@@ -144,11 +185,12 @@
     function saveLog() {
         const id = document.getElementById('editId').value;
         let type = document.getElementById('activityType').value;
-        if (type === 'CUSTOM') type = document.getElementById('customInput').value;
+        if (type === 'CUSTOM') type = rememberCustomActivity(document.getElementById('customInput').value);
         const start = document.getElementById('startTime').value;
         const end = document.getElementById('endTime').value;
 
         if (!start || !end || !type) return alert("Please select an activity and set both times.");
+        if (new Date(end) < new Date(start)) return alert("End time must be after the start time.");
 
         const entry = { id: id ? parseInt(id) : Date.now(), type, start, end };
 
@@ -178,6 +220,10 @@
         }
 
         localStorage.setItem('coughLogs', JSON.stringify(logs));
+        const saveStatus = document.getElementById('saveStatus');
+        saveStatus.textContent = id ? 'Activity entry updated.' : 'Activity entry saved.';
+        saveStatus.classList.remove('hidden');
+        renderActivityOptions();
         resetForm();
         renderAll();
     }
@@ -185,14 +231,18 @@
     function editLog(id) {
         const entry = logs.find(l => l.id === id);
         document.getElementById('editId').value = entry.id;
-        document.getElementById('activityType').value = ["Sleeping","Eating","Exercise","Medication","Laying Flat"].includes(entry.type) ? entry.type : "CUSTOM";
-        if (document.getElementById('activityType').value === "CUSTOM") {
+        const isKnownActivity = getAllActivities().includes(entry.type);
+        renderActivityOptions(isKnownActivity ? entry.type : "CUSTOM");
+        if (!isKnownActivity) {
             document.getElementById('customInput').value = entry.type;
             document.getElementById('customInput').classList.remove('hidden');
+        } else {
+            document.getElementById('customInput').classList.add('hidden');
+            document.getElementById('customInput').value = "";
         }
         document.getElementById('startTime').value = entry.start;
         document.getElementById('endTime').value = entry.end;
-        document.getElementById('formTitle').innerText = "Editing Entry...";
+        document.getElementById('formTitle').innerText = "Edit Activity";
         document.getElementById('saveBtn').innerText = "Update Entry";
         document.getElementById('cancelBtn').classList.remove('hidden');
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -213,7 +263,7 @@
         document.getElementById('cancelBtn').classList.add('hidden');
         document.getElementById('startTime').value = "";
         document.getElementById('endTime').value = "";
-        document.getElementById('activityType').value = "";        
+        renderActivityOptions();     
         document.getElementById('customInput').value = "";
         document.getElementById('customInput').classList.add('hidden');
     }
@@ -238,13 +288,13 @@
                     <div class="flex items-center gap-3">
                         <div class="w-2 h-8 rounded-full" style="background-color: ${getActivityColor(l.type)}"></div>
                         <div>
-                            <p class="font-bold text-slate-800">${l.type}</p>
-                            <p class="text-[10px] text-slate-500">${new Date(l.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${new Date(l.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                            <p class="font-bold text-slate-800 text-lg">${l.type}</p>
+                            <p class="text-sm text-slate-600">${new Date(l.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${new Date(l.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                         </div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="editLog(${l.id})" class="p-2 text-slate-400 hover:text-blue-500"><i data-lucide="edit-3" size="18"></i></button>
-                        <button onclick="deleteLog(${l.id})" class="p-2 text-slate-400 hover:text-red-500"><i data-lucide="trash-2" size="18"></i></button>
+                        <button onclick="editLog(${l.id})" class="p-3 text-slate-500 hover:text-blue-600" aria-label="Edit activity entry"><i data-lucide="edit-3" size="20"></i></button>
+                        <button onclick="deleteLog(${l.id})" class="p-3 text-slate-500 hover:text-red-600" aria-label="Delete activity entry"><i data-lucide="trash-2" size="20"></i></button>
                     </div>
                 </div>
             `).join('');
@@ -337,6 +387,7 @@
         link.click();
     }
 
+    renderActivityOptions();
     renderAll();
     </script>
 </body>
